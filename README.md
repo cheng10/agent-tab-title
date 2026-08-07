@@ -1,5 +1,7 @@
 # Agent Tab Title
 
+English | [简体中文](README.zh-CN.md)
+
 Stop guessing which terminal tab owns which coding task. Agent Tab Title keeps iTerm2 tabs understandable when you work through SSH with many Byobu/tmux windows and parallel coding-agent sessions.
 
 ```text
