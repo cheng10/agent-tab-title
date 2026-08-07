@@ -1,14 +1,37 @@
 # Agent Tab Title
 
-Keep iTerm2 tabs understandable when you work through SSH with many Byobu/tmux windows and parallel coding-agent sessions.
+Stop guessing which terminal tab owns which coding task. Agent Tab Title keeps iTerm2 tabs understandable when you work through SSH with many Byobu/tmux windows and parallel coding-agent sessions.
 
 ```text
 task title | repository:branch*
 ```
 
-- The stable tmux window name comes from a Codex CLI task title or a manual `ctx` label.
-- The active pane title shows the repository, Git branch, and dirty state.
-- Manual labels survive later agent hooks until you run `ctx --auto`.
+- Automatic task names from Codex CLI, with an opt-in experimental Trae CLI Next adapter.
+- Repository, Git branch, and dirty state in the active pane context.
+- Persistent manual labels for tabs that need a human-chosen name.
+- Safe defaults: raw prompts are not used as titles unless explicitly enabled.
+
+## Why this exists
+
+A common remote-development setup is iTerm2 on macOS, several SSH tabs, and one Byobu/tmux session per tab. Once multiple agents and shells run in parallel, the default titles all look alike. After a context switch, finding the tab for a task becomes a memory exercise.
+
+This project turns the tab title into a compact status line:
+
+```text
+fix-title-refresh | agent-tab-title:main*
+```
+
+The left side answers “what is this tab doing?” The right side answers “where is it doing it?” An asterisk means the Git worktree has changes.
+
+## How it works
+
+```text
+Codex/Trae lifecycle hook -> task label -> tmux window name (#W)
+zsh precmd              -> repo:branch* -> pane title (#T)
+tmux set-titles         -> #W | #T      -> iTerm2 tab title
+```
+
+The agent hook updates the stable task label. A zsh `precmd` hook refreshes repository context whenever the prompt returns. tmux combines both values and forwards the result to the outer terminal, including through SSH and Byobu.
 
 This is an independent community project. It is not affiliated with or endorsed by OpenAI, ByteDance, Trae, iTerm2, tmux, or Byobu.
 
@@ -29,7 +52,7 @@ The SQLite database is an implementation detail, not a stable API. When its path
 - Python 3 with the standard-library `sqlite3` module.
 - A Codex CLI version with `hooks.json` lifecycle hooks.
 
-## Install
+## Quick start
 
 Clone the repository and run:
 
@@ -75,6 +98,19 @@ Pressing `F8` also sets a manual window label. Both `ctx <label>` and the suppli
 
 After `ctx --auto`, submit another agent prompt to trigger the next automatic refresh.
 
+## Naming rules
+
+Manual mode always wins: `ctx <label>` and the supplied `F8` binding prevent later agent hooks from overwriting the window name. `ctx --auto` clears that guard.
+
+In automatic mode, task names are resolved in this order:
+
+1. Agent-generated rollout slug.
+2. Existing stored thread title.
+3. Sanitized prompt text, only with `--title-source prompt`.
+4. A generic label such as `codex-789abc`.
+
+Task labels are limited to 32 characters; the combined pane context is limited to 60 characters.
+
 ## Verify
 
 ```bash
@@ -90,6 +126,26 @@ Verify that:
 2. The terminal tab shows `task | repository:branch*`.
 3. A manual `ctx` label is not overwritten.
 4. `ctx --auto` allows the next agent hook to update the label.
+
+## Troubleshooting
+
+**The task name is empty or stale.** Run `ctx` to check the current mode, then run `ctx --auto`. If the CLI was already running when hooks were installed, restart that CLI and submit another prompt.
+
+**A manual title will not update automatically.** This is intentional. Run `ctx --auto`; the next agent lifecycle event will refresh it.
+
+**Trae CLI reports that `hooks.json` moved.** The experimental adapter writes `~/.trae/cli/hooks.json`. A legacy `~/.trae/hooks.json` is not used by current Trae CLI Next versions.
+
+**Nothing changes in tmux.** Confirm that `TMUX_PANE` is present, reload `~/.byobu/.tmux.conf`, and inspect `~/.cache/agent-tab-title.log`. Custom tmux sockets require a valid `TMUX` environment variable in the hook process.
+
+## Project files
+
+| File | Purpose |
+| --- | --- |
+| `install.py` | Idempotent installation, backups, and hook merging. |
+| `agent-tab-title.py` | Resolves task labels and updates tmux. |
+| `zsh-context-title.zsh` | Adds repository context and the `ctx` command. |
+| `tmux.conf` | Combines the stable task label with active-pane context. |
+| `tests/` | Covers privacy defaults, title cleanup, and installer idempotency. |
 
 ## Privacy
 
