@@ -80,6 +80,14 @@ python3 install.py --products codex,trae-next
 python3 install.py --title-source prompt
 ```
 
+如果希望把 Byobu 登录时只有数字的 session 列表改成“任务名称 + 仓库上下文”：
+
+```bash
+python3 install.py --byobu-picker
+```
+
+该选项会在 `~/.local/bin` 下安装一个 PATH 级别的 `byobu-select-session` 包装器。它只改变 session 的展示和选择方式，不会重命名 session，也不会修改 Byobu session group。
+
 安装器会：
 
 1. 将文件安装到 `~/.local/bin` 和 `~/.config/agent-tab-title`。
@@ -139,6 +147,8 @@ python3 -m unittest discover -s tests -v
 
 **tmux 中完全没有变化。** 确认环境中存在 `TMUX_PANE`，重新加载 `~/.byobu/.tmux.conf`，并查看 `~/.cache/agent-tab-title.log`。使用自定义 tmux socket 时，hook 进程需要获得有效的 `TMUX` 环境变量。
 
+**SSH 登录时的 session 列表仍然只有数字。** 执行 `python3 install.py --byobu-picker`，重新建立 SSH 连接，并确认 `command -v byobu-select-session` 指向 `~/.local/bin/byobu-select-session`。
+
 ## 项目文件
 
 | 文件 | 用途 |
@@ -147,6 +157,7 @@ python3 -m unittest discover -s tests -v
 | `agent-tab-title.py` | 解析任务名称并更新 tmux。 |
 | `zsh-context-title.zsh` | 添加仓库上下文和 `ctx` 命令。 |
 | `tmux.conf` | 将稳定的任务名称与活动 pane 上下文组合。 |
+| `byobu-session-picker.py` | 为 Byobu 登录 session 列表增加任务和仓库上下文。 |
 | `tests/` | 覆盖隐私默认值、标题清洗和安装器幂等性。 |
 
 ## 隐私说明

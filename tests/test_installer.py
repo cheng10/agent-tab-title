@@ -25,6 +25,7 @@ class InstallerTests(unittest.TestCase):
 
             self.assertTrue((home / ".codex" / "hooks.json").exists())
             self.assertFalse((home / ".trae" / "cli" / "hooks.json").exists())
+            self.assertFalse((home / ".local" / "bin" / "byobu-select-session").exists())
             self.assertNotIn("backup:", second.stdout)
 
             hooks = json.loads(
@@ -60,7 +61,21 @@ class InstallerTests(unittest.TestCase):
             self.assertIn("--product trae-next", command_text)
             self.assertIn("--title-source prompt", command_text)
 
+    def test_enhanced_byobu_picker_is_opt_in(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            env = {**os.environ, "HOME": directory}
+            subprocess.run(
+                [sys.executable, str(ROOT / "install.py"), "--byobu-picker"],
+                env=env,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            picker = home / ".local" / "bin" / "byobu-select-session"
+            self.assertTrue(picker.exists())
+            self.assertTrue(os.access(picker, os.X_OK))
+
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -80,6 +80,14 @@ To allow sanitized prompt text as a fallback title, opt in explicitly:
 python3 install.py --title-source prompt
 ```
 
+To replace Byobu's numeric-only login session list with task and repository titles:
+
+```bash
+python3 install.py --byobu-picker
+```
+
+This installs a PATH-level `byobu-select-session` wrapper under `~/.local/bin`. It changes only how sessions are displayed and selected; it does not rename sessions or modify Byobu session groups.
+
 The installer:
 
 1. Installs files under `~/.local/bin` and `~/.config/agent-tab-title`.
@@ -139,6 +147,8 @@ Verify that:
 
 **Nothing changes in tmux.** Confirm that `TMUX_PANE` is present, reload `~/.byobu/.tmux.conf`, and inspect `~/.cache/agent-tab-title.log`. Custom tmux sockets require a valid `TMUX` environment variable in the hook process.
 
+**The SSH login session list still shows only numbers.** Install the optional picker with `python3 install.py --byobu-picker`, start a new SSH login, and confirm that `command -v byobu-select-session` resolves to `~/.local/bin/byobu-select-session`.
+
 ## Project files
 
 | File | Purpose |
@@ -147,6 +157,7 @@ Verify that:
 | `agent-tab-title.py` | Resolves task labels and updates tmux. |
 | `zsh-context-title.zsh` | Adds repository context and the `ctx` command. |
 | `tmux.conf` | Combines the stable task label with active-pane context. |
+| `byobu-session-picker.py` | Adds task and repository context to Byobu's login session list. |
 | `tests/` | Covers privacy defaults, title cleanup, and installer idempotency. |
 
 ## Privacy

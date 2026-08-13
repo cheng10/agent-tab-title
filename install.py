@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parent
 HOME = Path.home()
 STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")
 SCRIPT = HOME / ".local" / "bin" / "agent-tab-title"
+BYOBU_PICKER = HOME / ".local" / "bin" / "byobu-select-session"
 CONFIG_DIR = HOME / ".config" / "agent-tab-title"
 
 
@@ -119,6 +120,11 @@ def main() -> None:
         default="safe",
         help="safe avoids raw prompt titles; prompt enables sanitized prompt fallback",
     )
+    parser.add_argument(
+        "--byobu-picker",
+        action="store_true",
+        help="install an enhanced Byobu session picker under ~/.local/bin",
+    )
     args = parser.parse_args()
     products = {item.strip() for item in args.products.split(",") if item.strip()}
     unknown = products - {"codex", "trae-next"}
@@ -126,6 +132,12 @@ def main() -> None:
         parser.error(f"invalid --products value: {','.join(sorted(unknown or products))}")
 
     install_file(ROOT / "agent-tab-title.py", SCRIPT, executable=True)
+    if args.byobu_picker:
+        install_file(
+            ROOT / "byobu-session-picker.py",
+            BYOBU_PICKER,
+            executable=True,
+        )
     install_file(ROOT / "zsh-context-title.zsh", CONFIG_DIR / "zsh-context-title.zsh")
     install_file(ROOT / "tmux.conf", CONFIG_DIR / "tmux.conf")
     ensure_line(
