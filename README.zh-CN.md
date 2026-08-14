@@ -44,6 +44,8 @@ Agent hook 负责更新相对稳定的任务名称；zsh `precmd` hook 在每次
 | Codex CLI | 支持 | 使用公开的生命周期 hook；可选的任务名增强功能只读访问本地 Codex 状态数据库。 |
 | Trae CLI Next | 实验性 | 需要通过 `--products trae-next` 显式启用；这不等同于兼容开源项目 `bytedance/trae-agent`。 |
 
+支持 iTerm2 tmux integration（`tmux -CC`）。在 Linux 上，hook 会通过 `/proc` 找到正在运行的 tmux server 对应的可执行文件，避免自定义新版 tmux server 被不兼容的系统旧版 tmux client 操作。
+
 SQLite 数据库属于实现细节，并非稳定 API。如果路径或表结构发生变化，hook 仍会回退为通用 session 名称。
 
 ## 环境要求
@@ -147,6 +149,8 @@ python3 -m unittest discover -s tests -v
 
 **tmux 中完全没有变化。** 确认环境中存在 `TMUX_PANE`，重新加载 `~/.byobu/.tmux.conf`，并查看 `~/.cache/agent-tab-title.log`。使用自定义 tmux socket 时，hook 进程需要获得有效的 `TMUX` 环境变量。
 
+**只有 iTerm2 Control Mode（`tmux -CC`）下标题失效。** 检查日志中是否出现 `lost server`。Linux 下 hook 会自动使用 `/proc/<tmux-server-pid>/exe` 匹配 server 版本；没有 `/proc` 的系统可将 `AGENT_TAB_TITLE_TMUX_BIN` 设置为启动 server 时使用的准确 tmux 路径。
+
 **SSH 登录时的 session 列表仍然只有数字。** 执行 `python3 install.py --byobu-picker`，重新建立 SSH 连接，并确认 `command -v byobu-select-session` 指向 `~/.local/bin/byobu-select-session`。
 
 ## 项目文件
@@ -184,7 +188,7 @@ source-file ~/.config/agent-tab-title/tmux.conf
 
 - Agent hook 和 SQLite 格式可能随版本变化。
 - 第一次触发 hook 时，自动语义名称可能尚未生成；安全模式会临时使用 `codex-<session 后缀>`。
-- 当 hook 能获取 `TMUX` 时支持自定义 tmux socket；否则使用常规的 `/tmp/tmux-<uid>/default` socket。
+- 当 hook 能获取 `TMUX` 时支持自定义 tmux socket 和 iTerm2 Control Mode；否则使用常规的 `/tmp/tmux-<uid>/default` socket。
 - 标题是经过压缩的简短标签，可能与 Agent UI 中展示的任务标题不同。
 
 ## License

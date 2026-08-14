@@ -17,6 +17,22 @@ SPEC.loader.exec_module(MODULE)
 
 
 class TitleTests(unittest.TestCase):
+    def test_tmux_binary_uses_running_server_executable(self) -> None:
+        with mock.patch.dict(
+            os.environ,
+            {"TMUX": "/tmp/tmux-1001/iterm36,2204772,0"},
+            clear=False,
+        ), mock.patch.object(MODULE.Path, "exists", return_value=True):
+            self.assertEqual(MODULE.tmux_binary(), "/proc/2204772/exe")
+
+    def test_tmux_binary_can_be_overridden(self) -> None:
+        with mock.patch.dict(
+            os.environ,
+            {"AGENT_TAB_TITLE_TMUX_BIN": "/opt/tmux/bin/tmux"},
+            clear=False,
+        ):
+            self.assertEqual(MODULE.tmux_binary(), "/opt/tmux/bin/tmux")
+
     def test_normalize_slug_has_no_project_specific_prefix(self) -> None:
         self.assertEqual(MODULE.normalize_slug("codex_fix_title_refresh"), "fix-title-refresh")
         self.assertEqual(MODULE.normalize_slug("customer_repository"), "customer-repository")
@@ -77,6 +93,16 @@ class TitleTests(unittest.TestCase):
                 "prompt",
             )
         self.assertEqual(title, "Improve tab titles")
+
+    def test_legacy_trae_adapter_uses_stable_fallback_label(self) -> None:
+        with mock.patch.object(MODULE, "state_database", return_value=None):
+            title = MODULE.read_task(
+                "trae",
+                "12345678-1234-1234-1234-123456789abc",
+                "",
+                "safe",
+            )
+        self.assertEqual(title, "trae-789abc")
 
     def test_codex_home_override(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -44,6 +44,8 @@ This is an independent community project. It is not affiliated with or endorsed 
 | Codex CLI | Supported | Uses public lifecycle hooks; optional task-title enrichment reads the local Codex state database read-only. |
 | Trae CLI Next | Experimental | Enable explicitly with `--products trae-next`. This is not the same compatibility claim as the open-source `bytedance/trae-agent` project. |
 
+iTerm2 tmux integration (`tmux -CC`) is supported. On Linux, the hook resolves the running tmux server executable through `/proc` so a custom tmux binary does not accidentally receive commands from an incompatible system tmux client.
+
 The SQLite database is an implementation detail, not a stable API. When its path or schema changes, the hook still falls back to a generic session label.
 
 ## Requirements
@@ -147,6 +149,8 @@ Verify that:
 
 **Nothing changes in tmux.** Confirm that `TMUX_PANE` is present, reload `~/.byobu/.tmux.conf`, and inspect `~/.cache/agent-tab-title.log`. Custom tmux sockets require a valid `TMUX` environment variable in the hook process.
 
+**Titles fail only in iTerm2 Control Mode (`tmux -CC`).** Check the log for `lost server`. The hook automatically uses `/proc/<tmux-server-pid>/exe` on Linux to match the server version. On systems without `/proc`, set `AGENT_TAB_TITLE_TMUX_BIN` to the exact tmux binary used to start the server.
+
 **The SSH login session list still shows only numbers.** Install the optional picker with `python3 install.py --byobu-picker`, start a new SSH login, and confirm that `command -v byobu-select-session` resolves to `~/.local/bin/byobu-select-session`.
 
 ## Project files
@@ -184,7 +188,7 @@ source-file ~/.config/agent-tab-title/tmux.conf
 
 - Agent hook and SQLite formats can change between releases.
 - Automatic semantic names may not be ready at the first hook; safe mode temporarily uses `codex-<session suffix>`.
-- Custom tmux sockets work when `TMUX` is available to the hook; otherwise the conventional `/tmp/tmux-<uid>/default` socket is used.
+- Custom tmux sockets and iTerm2 Control Mode work when `TMUX` is available to the hook; otherwise the conventional `/tmp/tmux-<uid>/default` socket is used.
 - The title is a compact label and may differ from the agent UI's displayed task title.
 
 ## License

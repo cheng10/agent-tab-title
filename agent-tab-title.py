@@ -7,8 +7,10 @@ import argparse
 import json
 import os
 import re
+import shutil
 import sqlite3
 import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -27,12 +29,29 @@ SECRET_VALUE = re.compile(
 UUID = re.compile(r"^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$", re.IGNORECASE)
 
 
+def tmux_binary() -> str:
+    override = os.environ.get("AGENT_TAB_TITLE_TMUX_BIN", "")
+    if override:
+        return override
+
+    fields = os.environ.get("TMUX", "").split(",")
+    if len(fields) > 1 and fields[1].isdigit():
+        server_executable = Path("/proc") / fields[1] / "exe"
+        if server_executable.exists():
+            # tmux clients and servers must speak the same protocol. This is
+            # especially important for iTerm2 Control Mode when it is started
+            # with a newer, non-PATH tmux binary.
+            return str(server_executable)
+
+    return shutil.which("tmux") or "tmux"
+
+
 def tmux(*args: str, check: bool = False) -> str:
     socket = os.environ.get("TMUX", "").split(",", 1)[0]
     if not socket:
         socket = f"/tmp/tmux-{os.getuid()}/default"
     result = subprocess.run(
-        ["tmux", "-S", socket, *args],
+        [tmux_binary(), "-S", socket, *args],
         check=check,
         text=True,
         stdout=subprocess.PIPE,
@@ -124,7 +143,8 @@ def read_task(product: str, session_id: str, prompt: str, title_source: str) -> 
         title = safe_prompt_title(prompt or stored_prompt)
     if title:
         return title
-    return f"{product}-{session_id[-6:]}" if session_id else product
+    label = "trae" if product in ("trae", "trae-next") else product
+    return f"{label}-{session_id[-6:]}" if session_id else label
 
 
 def should_preserve_manual(pane: str) -> bool:
@@ -150,7 +170,12 @@ def update_title(product: str, payload: dict[str, object], title_source: str) ->
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--product", choices=("codex", "trae-next"), required=True)
+    parser.add_argument(
+        "--product",
+        choices=("codex", "trae", "trae-next"),
+        required=True,
+        help="agent adapter; trae is accepted for compatibility with older installs",
+    )
     parser.add_argument(
         "--title-source",
         choices=("safe", "prompt"),
